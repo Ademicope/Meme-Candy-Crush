@@ -8,14 +8,19 @@ public class PortionBoard : MonoBehaviour
     // define the size of the board
     public int width = 6;
     public int height = 8;
+
     // define some spacing for the board
     public float spacingX;
     public float spacingY;
+
     // get a reference to the portion prefabs
     public GameObject[] portionPrefabs;
+
     // get a reference to the collection of node as game objects
     private Node[,] portionBoard;
+
     public GameObject portionBoardGO;
+
     public List<GameObject> portionsToDestroy = new();
     public GameObject portionsParent;
 
@@ -24,6 +29,9 @@ public class PortionBoard : MonoBehaviour
 
     [SerializeField]
     private bool isProcessingMove;
+
+    [SerializeField]
+    List<Portion> portionsToRemove = new();
 
     // Get a reference to layout array
     public ArrayLayout arrayLayout;
@@ -35,7 +43,7 @@ public class PortionBoard : MonoBehaviour
 
     private void Awake()
     {
-        //Instance = this;
+        Instance = this;
     }
     void Start()
     {
@@ -44,7 +52,7 @@ public class PortionBoard : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetMouseButton(0))
+        if (Input.GetMouseButtonDown(0))
         {
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
             RaycastHit2D hit = Physics2D.Raycast(ray.origin, ray.direction);
@@ -91,7 +99,7 @@ public class PortionBoard : MonoBehaviour
                 
             }
         }
-        if (CheckBoard(false))
+        if (CheckBoard())
         {
             Debug.Log("We have matches");
             InitializeBoard();
@@ -114,12 +122,16 @@ public class PortionBoard : MonoBehaviour
         }
     }
 
-    public bool CheckBoard(bool _takeAction)
+    public bool CheckBoard()
     {
+        if (GameManager.Instance.isGameEnded)
+            return false;
         Debug.Log("Checking board");
         bool hasMatched = false;
 
         List<Portion> portionsToRemove = new();
+
+        portionsToRemove.Clear();
 
         foreach (Node nodePortion in portionBoard)
         {
@@ -161,22 +173,25 @@ public class PortionBoard : MonoBehaviour
                 }
             }
         }
-        if (_takeAction)
-        {
-            foreach (Portion portionToRemove in portionsToRemove)
-            {
-                portionToRemove.isMatched = false;
-            }
-            //RemoveAndRefill
-            RemoveAndRefill(portionsToRemove);
-
-            if (CheckBoard(false))
-            {
-                CheckBoard(true);
-            }
-        }
 
         return hasMatched;
+    }
+
+    public IEnumerator ProcessTurnOnMatchedBoard(bool _subtractMoves)
+    {
+        foreach (Portion portionToRemove in portionsToRemove)
+        {
+            portionToRemove.isMatched = false;
+        }
+
+        RemoveAndRefill(portionsToRemove);
+        GameManager.Instance.ProcessTurn(portionsToRemove.Count, _subtractMoves);
+        yield return new WaitForSeconds(0.4f);
+
+        if (CheckBoard())
+        {
+            StartCoroutine(ProcessTurnOnMatchedBoard(false));
+        }
     }
 
     #region Cascading portions
@@ -295,7 +310,7 @@ public class PortionBoard : MonoBehaviour
             foreach (Portion port in _matchedResults.connectedPortions)
             {
                 //create new list of extra matches
-                List<Portion> extraConnectedPortions = new List<Portion>();
+                List<Portion> extraConnectedPortions = new();
 
                 //check direction up
                 CheckDirection(port, new Vector2Int(0, 1), extraConnectedPortions);
@@ -331,7 +346,7 @@ public class PortionBoard : MonoBehaviour
             foreach (Portion port in _matchedResults.connectedPortions)
             {
                 //create new list of extra matches
-                List<Portion> extraConnectedPortions = new List<Portion>();
+                List<Portion> extraConnectedPortions = new();
 
                 //check direction up
                 CheckDirection(port, new Vector2Int(1, 0), extraConnectedPortions);
@@ -383,7 +398,7 @@ public class PortionBoard : MonoBehaviour
             return new MatchResult
             {
                 connectedPortions = connectedPortions,
-                direction = MatchDirection.Horizontal,
+                direction = MatchDirection.Horizontal
             };
         }
 
@@ -545,9 +560,11 @@ public class PortionBoard : MonoBehaviour
     {
         yield return new WaitForSeconds(0.2f);
 
-        bool hasMatch = CheckBoard(false);
-
-        if (!hasMatch)
+        if (CheckBoard())
+        {
+            StartCoroutine(ProcessTurnOnMatchedBoard(true));
+        }
+        else
         {
             DoSwap(_currentPortion, _targetPortion);
         }
