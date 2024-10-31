@@ -21,6 +21,8 @@ public class GameManager : MonoBehaviour
     public TMP_Text pointsTxt;
     public TMP_Text movesTxt;
     public TMP_Text goalTxt;
+    public TMP_Text winTxt;
+    public TMP_Text loseTxt;
 
     private void Awake()
     {
@@ -54,6 +56,7 @@ public class GameManager : MonoBehaviour
             //Display a victory screen
             backgroundPanel.SetActive(true);
             victoryPanel.SetActive(true);
+            winTxt.text = "Congratulations, you have won with " + moves.ToString() + " moves left!!!";
             PortionBoard.Instance.portionsParent.SetActive(false);
             return;
         }
@@ -63,6 +66,7 @@ public class GameManager : MonoBehaviour
             isGameEnded = true;
             backgroundPanel.SetActive(true);
             losePanel.SetActive(true);
+            loseTxt.text = "You lost, better luck next time.";
             PortionBoard.Instance.portionsParent.SetActive(false);
             return;
         }

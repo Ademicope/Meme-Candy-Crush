@@ -129,7 +129,7 @@ public class PortionBoard : MonoBehaviour
         Debug.Log("Checking board");
         bool hasMatched = false;
 
-        List<Portion> portionsToRemove = new();
+        //List<Portion> portionsToRemove = new();
 
         portionsToRemove.Clear();
 
@@ -169,7 +169,6 @@ public class PortionBoard : MonoBehaviour
                             hasMatched = true;
                         }
                     }
-
                 }
             }
         }
